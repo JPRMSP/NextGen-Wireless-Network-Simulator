@@ -1,141 +1,112 @@
 import streamlit as st
-import time
+import random
+import datetime
+import io
 
-# ---------------------- Page Configuration ----------------------
-st.set_page_config(page_title="NextGen Wireless Network Simulator", layout="centered")
+st.set_page_config(page_title="NextGen Wireless Network Simulator", layout="wide")
 
+# Title
 st.title("📡 NextGen Wireless Network Simulator")
-st.markdown("""
-Welcome to the interactive simulator for understanding core mechanisms in Next Generation Wireless Networks (3GPP/3GPP2).  
-Use the sidebar to explore different modules such as **PDP Context Activation**, **IMS Signaling**, **Mobility**, **Security**, and **QoS Mapping**.
-""")
+st.markdown("An interactive tool to simulate 4G/5G wireless networks.")
 
-# ---------------------- Module 1: PDP Context Activation ----------------------
-def pdp_context_simulation():
-    st.subheader("📶 PDP Context Activation")
-    steps = [
-        "1. MS sends Attach Request to SGSN",
-        "2. SGSN authenticates and sends Authentication Request",
-        "3. MS responds with Authentication Response",
-        "4. SGSN sends Update Location to HLR",
-        "5. HLR acknowledges with Insert Subscriber Data",
-        "6. MS sends Activate PDP Context Request",
-        "7. SGSN forwards to GGSN",
-        "8. GGSN creates PDP context and returns PDP address",
-        "9. SGSN confirms PDP context to MS",
-        "10. Radio Bearer is assigned",
-        "11. Mobile now has IP connectivity"
-    ]
-    if st.button("▶ Start PDP Context Simulation"):
-        for step in steps:
-            st.success(step)
-            time.sleep(1.2)
+# Sidebar - Configuration
+st.sidebar.header("🛠️ Network Configuration")
 
-# ---------------------- Module 2: IMS Signaling ----------------------
-def ims_signaling_simulation():
-    st.subheader("📲 IMS Signaling Flow (SIP-based)")
+network_type = st.sidebar.selectbox("Select Network Type", ["4G LTE", "5G NR"])
+num_devices = st.sidebar.slider("Number of Connected Devices", 1, 200, 50)
+environment = st.sidebar.selectbox("Deployment Environment", ["Urban", "Suburban", "Rural"])
+traffic_type = st.sidebar.selectbox("Traffic Profile", ["VoIP", "Video", "Web", "IoT"])
 
-    signaling_steps = [
-        "1. MS sends REGISTER request to P-CSCF",
-        "2. P-CSCF forwards to I-CSCF → S-CSCF",
-        "3. S-CSCF contacts HSS for user profile",
-        "4. S-CSCF responds with 200 OK to REGISTER",
-        "5. MS sends SIP INVITE to initiate session",
-        "6. P-CSCF routes to remote UE via S-CSCF",
-        "7. Remote UE sends 180 Ringing → 200 OK",
-        "8. MS sends ACK, session established",
-        "9. Media flows directly between UEs (RTP)",
-        "10. Session can be modified or terminated by BYE"
-    ]
-    if st.button("▶ Start IMS Signaling Simulation"):
-        for step in signaling_steps:
-            st.info(step)
-            time.sleep(1.2)
+# Function to simulate performance metrics
+def simulate_metrics(devices, net_type, traffic, env):
+    if net_type == "4G LTE":
+        base_throughput = random.uniform(30, 70)
+        base_latency = random.uniform(20, 60)
+    else:  # 5G NR
+        base_throughput = random.uniform(150, 1000)
+        base_latency = random.uniform(1, 20)
 
-# ---------------------- Module 3: Mobility Management ----------------------
-def mobility_management_simulation():
-    st.subheader("🚗 Mobile IPv6 Handoff Simulation")
+    # Traffic impact
+    traffic_modifiers = {
+        "VoIP": (1.1, 0.9),
+        "Video": (0.85, 1.2),
+        "Web": (1.0, 1.0),
+        "IoT": (1.2, 0.8),
+    }
+    t_mult, l_mult = traffic_modifiers[traffic]
 
-    mobility_steps = [
-        "1. Mobile Node (MN) detects movement to new subnet",
-        "2. MN configures new Care-of Address (CoA)",
-        "3. MN sends Binding Update to Home Agent (HA)",
-        "4. HA updates Binding Cache",
-        "5. Packets now tunneled from HA to new CoA",
-        "6. MN optionally updates Correspondent Node (CN)",
-        "7. CN can now send packets directly to MN"
-    ]
-    if st.button("▶ Start Mobile IPv6 Handoff Simulation"):
-        for step in mobility_steps:
-            st.warning(step)
-            time.sleep(1.2)
+    # Device impact
+    scale_factor = max(1.0, devices / 50.0)
+    throughput = base_throughput * t_mult / scale_factor
+    latency = base_latency * l_mult * scale_factor
 
-# ---------------------- Module 4: Security Flow ----------------------
-def security_simulation():
-    st.subheader("🔐 GSM/GPRS/3GPP Security Authentication")
+    return round(throughput, 2), round(latency, 2)
 
-    security_steps = [
-        "1. MS sends Authentication Request to Network",
-        "2. Network generates RAND and sends to MS",
-        "3. MS computes SRES using A3 algorithm",
-        "4. MS sends SRES to Network",
-        "5. Network compares SRES with expected response",
-        "6. If match, session proceeds",
-        "7. Kc (ciphering key) derived using A8 algorithm",
-        "8. Traffic encrypted using Kc",
-        "9. IPsec tunnel established (for 3G/4G security)"
-    ]
-    if st.button("▶ Start Security Authentication Simulation"):
-        for step in security_steps:
-            st.error(step)
-            time.sleep(1.2)
+# Function to generate coverage range
+def get_coverage(env, net_type):
+    base_ranges = {
+        "Urban": 1,
+        "Suburban": 2.5,
+        "Rural": 5,
+    }
+    multiplier = 1.0 if net_type == "4G LTE" else 0.8
+    return round(base_ranges[env] * multiplier, 2)
 
-# ---------------------- Module 5: QoS Profile Mapping ----------------------
-def qos_mapping_tool():
-    st.subheader("🎯 QoS Profile Mapper")
-    st.markdown("Select an application to view its mapped QoS class, delay, and bitrate requirement.")
+# Simulate button
+if st.button("🚀 Run Simulation"):
+    throughput, latency = simulate_metrics(num_devices, network_type, traffic_type, environment)
+    coverage = get_coverage(environment, network_type)
 
-    app_type = st.selectbox("Select Application Type:", [
-        "Voice over IP (VoIP)",
-        "Video Streaming",
-        "Web Browsing",
-        "Email",
-        "Real-time Gaming",
-        "File Transfer"
-    ])
+    st.success("✅ Simulation Complete")
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("📶 Network Type", network_type)
+    col2.metric("⚙️ Devices", num_devices)
+    col3.metric("🌍 Environment", environment)
 
-    if st.button("🔍 Show QoS Profile"):
-        if app_type == "Voice over IP (VoIP)":
-            st.success("**QoS Class:** Conversational\n**Delay:** < 150ms\n**Guaranteed Bitrate:** Yes")
-        elif app_type == "Video Streaming":
-            st.success("**QoS Class:** Streaming\n**Delay:** < 400ms\n**Guaranteed Bitrate:** Yes")
-        elif app_type == "Web Browsing":
-            st.success("**QoS Class:** Interactive\n**Delay:** < 1s\n**Guaranteed Bitrate:** No")
-        elif app_type == "Email":
-            st.success("**QoS Class:** Background\n**Delay:** Tolerant\n**Guaranteed Bitrate:** No")
-        elif app_type == "Real-time Gaming":
-            st.success("**QoS Class:** Conversational / Interactive\n**Delay:** < 100ms\n**Guaranteed Bitrate:** Yes")
-        elif app_type == "File Transfer":
-            st.success("**QoS Class:** Background\n**Delay:** Tolerant\n**Guaranteed Bitrate:** No")
+    st.subheader("📊 Performance Metrics")
+    st.metric("Throughput (Mbps)", f"{throughput}")
+    st.metric("Latency (ms)", f"{latency}")
+    st.metric("Estimated Cell Coverage (km)", f"{coverage}")
 
-# ---------------------- Sidebar Navigation ----------------------
-st.sidebar.title("🧭 Navigation")
-selected_module = st.sidebar.radio("Choose Module:", (
-    "PDP Context Activation",
-    "IMS Signaling Flow",
-    "Mobile IPv6 Handoff",
-    "Security Authentication",
-    "QoS Profile Mapping"
-))
+    st.subheader("📡 Network Topology Summary")
+    st.code(f"""
+Network Type: {network_type}
+Traffic Type: {traffic_type}
+Devices: {num_devices}
+Environment: {environment}
+Throughput: {throughput} Mbps
+Latency: {latency} ms
+Coverage Radius: {coverage} km
+    """, language="text")
 
-# ---------------------- Main Dispatcher ----------------------
-if selected_module == "PDP Context Activation":
-    pdp_context_simulation()
-elif selected_module == "IMS Signaling Flow":
-    ims_signaling_simulation()
-elif selected_module == "Mobile IPv6 Handoff":
-    mobility_management_simulation()
-elif selected_module == "Security Authentication":
-    security_simulation()
-elif selected_module == "QoS Profile Mapping":
-    qos_mapping_tool()
+    # Generate downloadable report
+    def generate_report():
+        report = f"""
+===== NextGen Wireless Network Report =====
+Timestamp: {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+Network Type     : {network_type}
+Traffic Profile  : {traffic_type}
+Environment      : {environment}
+Devices Connected: {num_devices}
+
+--- Simulation Results ---
+Throughput        : {throughput} Mbps
+Latency           : {latency} ms
+Coverage Estimate : {coverage} km
+
+Thank you for using NextGen Simulator!
+        """
+        return report
+
+    report_text = generate_report()
+    st.download_button(
+        label="📥 Download Report as .txt",
+        data=report_text,
+        file_name="network_report.txt",
+        mime="text/plain"
+    )
+
+else:
+    st.info("Click 'Run Simulation' to begin.")
